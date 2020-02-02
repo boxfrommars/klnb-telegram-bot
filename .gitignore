@@ -1,0 +1,4 @@
+*.log
+*.py_bck
+__pycache__
+.env
