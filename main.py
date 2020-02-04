@@ -16,13 +16,19 @@ dp = updater.dispatcher
 
 # Handlers
 dp.add_handler(CommandHandler('start', handlers.start))
-dp.add_handler(MessageHandler(Filters.text, handlers.echo))
+dp.add_handler(handlers.weak_handler)
+dp.add_handler(handlers.iphone_handler)
+dp.add_handler(handlers.alaverdi_handler)
+dp.add_handler(handlers.kuban_handler)
+dp.add_handler(handlers.krd_handler)
 
 
-# log all errors
+dp.add_handler(MessageHandler(Filters.text, handlers.collector))
+
 dp.add_error_handler(handlers.error)
 # Start the Bot
 updater.start_polling()
+
 # Run the bot until you press Ctrl-C or the process receives SIGINT,
 # SIGTERM or SIGABRT. This should be used most of the time, since
 # start_polling() is non-blocking and will stop the bot gracefully.
