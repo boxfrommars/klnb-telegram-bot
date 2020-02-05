@@ -1,4 +1,5 @@
 import logging
+import os
 import random
 import re
 from typing import Callable
@@ -33,7 +34,28 @@ spam_preventer = SpamPreventer()
 two_men_talk = TwoMenTalkConversation()
 
 
-def choice(choices: list, group: str = 'default') -> Callable[[Update, CallbackContext], None]:
+def choice(choices: list, group: str = 'default', content_type: str = 'text') \
+        -> Callable[[Update, CallbackContext], None]:
+    def func(update: Update, context: CallbackContext) -> None:
+        if update.message is None:
+            logger.warning('Empty message text')
+            return
+
+        if not spam_preventer.is_spam(update.message, group):
+            if content_type == 'text':
+                update.message.reply_text(text=random.choice(choices))
+
+            if content_type == 'photo':
+                current_folder = os.path.dirname(__file__)
+                image_src = os.path.join(current_folder, 'media', 'images', random.choice(choices))
+                update.message.reply_photo(photo=open(image_src, 'rb'))
+        else:
+            logger.info('spam_prevented: %s', group)
+
+    return func
+
+
+def image_choice(choices: list, group: str = 'default') -> Callable[[Update, CallbackContext], None]:
     def func(update: Update, context: CallbackContext) -> None:
         if update.message is None:
             logger.warning('Empty message text')
@@ -97,6 +119,10 @@ iphone_handler = MessageHandler(
 alaverdi_handler = MessageHandler(
     Filters.regex(re.compile(r'\bалаверд', re.IGNORECASE)),
     choice(['+++', '<3'], 'alaverdi'))
+
+bodnya_handler = MessageHandler(
+    Filters.regex(re.compile(r'(\bбодн|\bбэд\b)', re.IGNORECASE)),
+    choice(['bodnya.webp'], 'bodnya', content_type='photo'))
 
 kuban_handler = MessageHandler(
     Filters.regex(re.compile(r'\bкубан', re.IGNORECASE)),
