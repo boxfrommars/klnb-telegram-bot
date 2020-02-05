@@ -121,7 +121,7 @@ alaverdi_handler = MessageHandler(
     choice(['+++', '<3'], 'alaverdi'))
 
 bodnya_handler = MessageHandler(
-    Filters.regex(re.compile(r'(\bбодн|\bбэд\b)', re.IGNORECASE)),
+    Filters.regex(re.compile(r'(\bбодня)|(\b(бэд(а|у|ом|е)?)\b)', re.IGNORECASE)),
     choice(['bodnya.webp'], 'bodnya', content_type='photo'))
 
 kuban_handler = MessageHandler(
