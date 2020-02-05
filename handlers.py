@@ -1,13 +1,16 @@
 import logging
 import random
 import re
+from typing import Callable
 
-from telegram.ext import MessageHandler, Filters
+from telegram import Update
+from telegram.ext import MessageHandler, Filters, CallbackContext
 
+from conversations.spam_preventer import SpamPreventer
 from conversations.two_men_talk import TwoMenTalkConversation
 
 logging.basicConfig(
-    filename='bot.log',
+    filename='logs/bot.log',
     format='%(asctime)s - %(levelname)s - %(message)s',
     level=logging.INFO
 )
@@ -15,29 +18,36 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def error(update, context):
+def error(update: Update, context: CallbackContext) -> None:
     """Log Errors caused by Updates."""
     logger.warning('Update "%s" caused error "%s"', update, context.error)
 
 
-def start(update, context):
-    context.bot.send_message(chat_id=update.effective_chat.id, text="I'm a bot, please talk to me!")
+def start(update: Update, context: CallbackContext) -> None:
+    context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text="I'm a bot, please talk to me!")
 
 
-def choice(choices):
-    def func(update, context):
+spam_preventer = SpamPreventer()
+two_men_talk = TwoMenTalkConversation()
+
+
+def choice(choices: list, group: str = 'default') -> Callable[[Update, CallbackContext], None]:
+    def func(update: Update, context: CallbackContext) -> None:
         if update.message is None:
             logger.warning('Empty message text')
             return
-        update.message.reply_text(text=random.choice(choices))
+
+        if not spam_preventer.is_spam(update.message, group):
+            update.message.reply_text(text=random.choice(choices))
+        else:
+            logger.info('spam_prevented: %s', group)
 
     return func
 
 
-two_men_talk = TwoMenTalkConversation()
-
-
-def collector(update, context):
+def collector(update: Update, context: CallbackContext) -> None:
     if update.message is None:
         logger.warning('Empty message text')
         return
@@ -50,12 +60,29 @@ def collector(update, context):
             text=random.choice(['Мужиками сидим', 'Разговор двух мужчин'])
         )
 
-    logger.info('len: %s %s', update.message.from_user.username, len(two_men_talk.conversation))
+
+def configure(update: Update, context: CallbackContext) -> None:
+    if len(context.args) < 1:
+        logger.warning('empty command')
+
+    command = str(context.args[0])
+    message = update.message
+    logger.info('command: %s', command)
+
+    if command == 'enable-spam-filter':
+        spam_preventer.enable()
+        logger.info('Spam filter enabled by %s', message.from_user.username)
+        update.message.reply_text('Spam filter enabled')
+
+    if command == 'disable-spam-filter':
+        spam_preventer.disable()
+        logger.info('Spam filter disabled by %s', message.from_user.username)
+        update.message.reply_text('Spam filter disabled')
 
 
 weak_handler = MessageHandler(
     Filters.regex(re.compile(r'\bслабо\b', re.IGNORECASE)),
-    choice(['Слабейше']))
+    choice(['Слабейше'], 'weak'))
 
 iphone_handler = MessageHandler(
     Filters.regex(re.compile(r'\bайфон', re.IGNORECASE)),
@@ -65,11 +92,11 @@ iphone_handler = MessageHandler(
         'Мы начали забывать о старинном обычае (алаверды)',
         'Много слов, мало алаверды',
         'Своеобразное алаверды, пожалуйста'
-    ]))
+    ], 'iphone'))
 
 alaverdi_handler = MessageHandler(
     Filters.regex(re.compile(r'\bалаверд', re.IGNORECASE)),
-    choice(['+++', '<3']))
+    choice(['+++', '<3'], 'alaverdi'))
 
 kuban_handler = MessageHandler(
     Filters.regex(re.compile(r'\bкубан', re.IGNORECASE)),
@@ -80,7 +107,7 @@ kuban_handler = MessageHandler(
         'Ты Кубань, ты наша родина!',
         'Мы живем в лучшем крае, солнечном рае!',
         'Если есть на свете рай — это Краснодарский край!'
-    ]))
+    ], 'kuban'))
 
 krd_handler = MessageHandler(
     Filters.regex(re.compile(r'(\bкраснодар|\bкрд\b)', re.IGNORECASE)),
@@ -95,4 +122,4 @@ krd_handler = MessageHandler(
         'Славься град Екатерины!',
         'Наш маленький Париж...',
         'Это ж не собачья глушь, а собачкина столица!'
-    ]))
+    ], 'kuban'))
