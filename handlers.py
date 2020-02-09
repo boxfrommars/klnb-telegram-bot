@@ -34,37 +34,32 @@ spam_preventer = SpamPreventer()
 two_men_talk = TwoMenTalkConversation()
 
 
-def choice(choices: list, group: str = 'default', content_type: str = 'text') \
+def decision(prob: float = 0.5) -> bool:
+    return random.random() < prob
+
+
+def choice(choices: list, group: str = 'default', content_type: str = 'text', prob: float = 1) \
         -> Callable[[Update, CallbackContext], None]:
     def func(update: Update, context: CallbackContext) -> None:
         if update.message is None:
             logger.warning('Empty message text')
             return
 
-        if not spam_preventer.is_spam(update.message, group):
-            if content_type == 'text':
-                update.message.reply_text(text=random.choice(choices))
-
-            if content_type == 'photo':
-                current_folder = os.path.dirname(__file__)
-                image_src = os.path.join(current_folder, 'media', 'images', random.choice(choices))
-                update.message.reply_photo(photo=open(image_src, 'rb'))
-        else:
+        if spam_preventer.is_spam(update.message, group):
             logger.info('spam_prevented: %s', group)
-
-    return func
-
-
-def image_choice(choices: list, group: str = 'default') -> Callable[[Update, CallbackContext], None]:
-    def func(update: Update, context: CallbackContext) -> None:
-        if update.message is None:
-            logger.warning('Empty message text')
             return
 
-        if not spam_preventer.is_spam(update.message, group):
+        if not decision(prob):
+            logger.info('Bot decided to not reply')
+            return
+
+        if content_type == 'text':
             update.message.reply_text(text=random.choice(choices))
-        else:
-            logger.info('spam_prevented: %s', group)
+
+        if content_type == 'photo':
+            current_folder = os.path.dirname(__file__)
+            image_src = os.path.join(current_folder, 'media', 'images', random.choice(choices))
+            update.message.reply_photo(photo=open(image_src, 'rb'))
 
     return func
 
@@ -120,6 +115,10 @@ alaverdi_handler = MessageHandler(
     Filters.regex(re.compile(r'\bалаверд', re.IGNORECASE)),
     choice(['+++', '<3'], 'alaverdi'))
 
+sad_handler = MessageHandler(
+    Filters.regex(re.compile(r'^:\($', re.IGNORECASE)),
+    choice(['sad-cat.webp'], 'sad-cat', content_type='photo'))
+
 bodnya_handler = MessageHandler(
     Filters.regex(re.compile(r'(\bбодн)|(\b(бэд(а|у|ом|е)?)\b)', re.IGNORECASE)),
     choice(['bodnya.webp'], 'bodnya', content_type='photo'))
@@ -136,7 +135,7 @@ kuban_handler = MessageHandler(
     ], 'kuban'))
 
 krd_handler = MessageHandler(
-    Filters.regex(re.compile(r'(\bкраснодар|\bкрд\b)', re.IGNORECASE)),
+    Filters.regex(re.compile(r'(\bкраснодар)|(\bкрд\b)', re.IGNORECASE)),
     choice([
         'Ой, в моем сердце ты, Кубань!',
         'Слава Кубани!',
