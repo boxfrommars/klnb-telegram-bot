@@ -10,7 +10,7 @@ class SpamPreventer:
     group_settings: dict = {}
 
     default_settings: dict = {
-        'delay': 5 * 60
+        'delay': 15 * 60
     }
 
     is_enabled: bool = True

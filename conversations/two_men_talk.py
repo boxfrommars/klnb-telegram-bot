@@ -9,7 +9,7 @@ class TwoMenTalkConversation:
     window: int = 6  # check last `window` messages for "two men talk"
     time_window: int = 5 * 60  # max seconds between first and last message in the conversation
     last_talk: datetime = None  # last "two men talk" time
-    delay: int = 60 * 60 * 6  # time between two "two men talk"
+    delay: int = 60 * 60 * 3  # time between two "two men talk"
 
     members: List[str] = ['mol_chan', 'SelianArtem']
 
