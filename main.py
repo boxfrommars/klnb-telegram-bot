@@ -24,6 +24,7 @@ dp.add_handler(handlers.iphone_handler)
 dp.add_handler(handlers.alaverdi_handler)
 dp.add_handler(handlers.kuban_handler)
 dp.add_handler(handlers.krd_handler)
+dp.add_handler(handlers.awesome_selyan_handler)
 
 dp.add_handler(MessageHandler(Filters.text, handlers.collector))
 

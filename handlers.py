@@ -9,6 +9,7 @@ from telegram.ext import MessageHandler, Filters, CallbackContext
 
 from conversations.spam_preventer import SpamPreventer
 from conversations.two_men_talk import TwoMenTalkConversation
+from filters.text_count import TextCountFilter
 
 logging.basicConfig(
     filename='logs/bot.log',
@@ -122,6 +123,10 @@ sad_handler = MessageHandler(
 bodnya_handler = MessageHandler(
     Filters.regex(re.compile(r'(\bбодн)|(\b(бэд(а|у|ом|е)?)\b)', re.IGNORECASE)),
     choice(['bodnya.webp'], 'bodnya', content_type='photo'))
+
+awesome_selyan_handler = MessageHandler(
+    Filters.user(username='SelianArtem') & Filters.text & (~Filters.forwarded) & TextCountFilter(30),
+    choice(['Артём Сергеевич, вашими устами да мёд бы пить'], 'awesome-selyan'))
 
 kuban_handler = MessageHandler(
     Filters.regex(re.compile(r'\bкубан', re.IGNORECASE)),
