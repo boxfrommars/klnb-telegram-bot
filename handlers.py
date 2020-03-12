@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import random
@@ -8,9 +9,8 @@ from telegram import Update
 from telegram.ext import MessageHandler, Filters, CallbackContext
 
 from conversations.two_men_talk import TwoMenTalkConversation
-from filters.text_count import TextCountFilter
 from filters.antispam import AntispamFilter, SpamPreventer
-# from filters.random import RandomFilter
+from filters.text_count import TextCountFilter
 
 logging.basicConfig(
     filename='logs/bot.log',
@@ -153,3 +153,26 @@ krd_handler = MessageHandler(
         'Наш маленький Париж...',
         'Это ж не собачья глушь, а собачкина столица!'
     ]))
+
+
+def cruise_info(update: Update, context: CallbackContext):
+    fname = os.environ.get('CRUISE_FILE')
+    with open(fname) as json_file:
+        data = json.load(json_file)
+        message = '```\n'
+
+        for country in data:
+            row = data[country]
+            message += (
+                f"{country:<8} infected: {row.get('infected'):<5}"
+                f"deaths: {row.get('deaths'):<3}"
+                f"recovered: {row.get('recovered')}\n")
+
+        message += '```'
+
+        update.message.reply_markdown(text=message)
+
+
+cruise_handler = MessageHandler(
+    regex(r'круиз') & antispam('cruise'),
+    cruise_info)
