@@ -7,9 +7,10 @@ from typing import Callable
 from telegram import Update
 from telegram.ext import MessageHandler, Filters, CallbackContext
 
-from conversations.spam_preventer import SpamPreventer
 from conversations.two_men_talk import TwoMenTalkConversation
 from filters.text_count import TextCountFilter
+from filters.antispam import AntispamFilter, SpamPreventer
+# from filters.random import RandomFilter
 
 logging.basicConfig(
     filename='logs/bot.log',
@@ -35,23 +36,20 @@ spam_preventer = SpamPreventer()
 two_men_talk = TwoMenTalkConversation()
 
 
-def decision(prob: float = 0.5) -> bool:
-    return random.random() < prob
+def regex(pattern: str):
+    # shorthand for Filters.regex with ignorecase pattern
+    return Filters.regex(re.compile(pattern, re.IGNORECASE))
 
 
-def choice(choices: list, group: str = 'default', content_type: str = 'text', prob: float = 1) \
+def antispam(group: str = 'default'):
+    return AntispamFilter(spam_preventer, group)
+
+
+def choice(choices: list, content_type: str = 'text') \
         -> Callable[[Update, CallbackContext], None]:
     def func(update: Update, context: CallbackContext) -> None:
         if update.message is None:
             logger.warning('Empty message text')
-            return
-
-        if spam_preventer.is_spam(update.message, group):
-            logger.info('spam_prevented: %s', group)
-            return
-
-        if not decision(prob):
-            logger.info('Bot decided to not reply')
             return
 
         if content_type == 'text':
@@ -99,37 +97,39 @@ def configure(update: Update, context: CallbackContext) -> None:
 
 
 weak_handler = MessageHandler(
-    Filters.regex(re.compile(r'\bслабо\b', re.IGNORECASE)),
-    choice(['Слабейше'], 'weak'))
+    regex(r'\bслабо\b') & antispam('weak'),
+    choice(['Слабейше']))
 
 iphone_handler = MessageHandler(
-    Filters.regex(re.compile(r'\bайфон', re.IGNORECASE)),
+    regex(r'\bайфон') & antispam('iphone'),
     choice([
         'Похоже, тут необходимо некое алаверды',
         'Может всё же алаверды?',
         'Мы начали забывать о старинном обычае (алаверды)',
         'Много слов, мало алаверды',
         'Своеобразное алаверды, пожалуйста'
-    ], 'iphone'))
+    ]))
 
 alaverdi_handler = MessageHandler(
-    Filters.regex(re.compile(r'\bалаверд', re.IGNORECASE)),
-    choice(['+++', '<3'], 'alaverdi'))
+    regex(r'\bалаверд') & antispam('alaverdi'),
+    choice(['+++', '<3']))
 
 sad_handler = MessageHandler(
-    Filters.regex(re.compile(r'^:\($', re.IGNORECASE)),
-    choice(['sad-cat.webp'], 'sad-cat', content_type='photo'))
+    regex(r'^:\($') & antispam('sad-cat'),
+    choice(['sad-cat.webp'], content_type='photo'))
 
 bodnya_handler = MessageHandler(
-    Filters.regex(re.compile(r'(\bбодн)|(\b(бэд(а|у|ом|е)?)\b)', re.IGNORECASE)),
-    choice(['bodnya.webp'], 'bodnya', content_type='photo'))
+    regex(r'(\bбодн)|(\b(бэд(а|у|ом|е)?)\b)') & antispam('bodnya'),
+    choice(['bodnya.webp'], content_type='photo'))
 
 awesome_selyan_handler = MessageHandler(
-    Filters.user(username='SelianArtem') & Filters.text & (~Filters.forwarded) & TextCountFilter(30),
-    choice(['Артём Сергеевич, вашими устами да мёд бы пить'], 'awesome-selyan'))
+    Filters.user(username='SelianArtem') & Filters.text
+    & (~Filters.forwarded) & TextCountFilter(30)
+    & antispam('awesome_selyan'),
+    choice(['Артём Сергеевич, вашими устами да мёд бы пить']))
 
 kuban_handler = MessageHandler(
-    Filters.regex(re.compile(r'\bкубан', re.IGNORECASE)),
+    regex(r'\bкубан') & antispam('kuban'),
     choice([
         'Ой, в моем сердце ты, Кубань!',
         'Слава Кубани!',
@@ -137,10 +137,10 @@ kuban_handler = MessageHandler(
         'Ты Кубань, ты наша родина!',
         'Мы живем в лучшем крае, солнечном рае!',
         'Если есть на свете рай — это Краснодарский край!'
-    ], 'kuban'))
+    ]))
 
 krd_handler = MessageHandler(
-    Filters.regex(re.compile(r'(\bкраснодар)|(\bкрд\b)', re.IGNORECASE)),
+    regex(r'(\bкраснодар)|(\bкрд\b)') & antispam('kuban'),
     choice([
         'Ой, в моем сердце ты, Кубань!',
         'Слава Кубани!',
@@ -152,4 +152,4 @@ krd_handler = MessageHandler(
         'Славься град Екатерины!',
         'Наш маленький Париж...',
         'Это ж не собачья глушь, а собачкина столица!'
-    ], 'kuban'))
+    ]))

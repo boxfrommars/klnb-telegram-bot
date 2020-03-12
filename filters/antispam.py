@@ -1,6 +1,7 @@
 import logging
 
 from telegram import Message
+from telegram.ext import BaseFilter
 
 logger = logging.getLogger(__name__)
 
@@ -49,3 +50,12 @@ class SpamPreventer:
         self.is_enabled = False
 
 
+class AntispamFilter(BaseFilter):
+    group: str
+
+    def __init__(self, sp: SpamPreventer, group: str = 'default') -> None:
+        self.group = group
+        self.sp = sp
+
+    def filter(self, message: Message):
+        return not self.sp.is_spam(message, self.name)

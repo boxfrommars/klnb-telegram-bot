@@ -38,9 +38,9 @@ class TwoMenTalkConversation:
     def enough_messages(self) -> bool:
         messages_users = [m.from_user.username for m in self.conversation]
 
-        members_enough_messages = all(
-            [messages_users.count(u) >= self.messages_each for u in self.members]
-        )
+        members_enough_messages = all([
+            messages_users.count(u) >= self.messages_each for u in self.members
+        ])
 
         total_enough_messages = len(self.conversation) == self.window
 
