@@ -58,4 +58,4 @@ class AntispamFilter(BaseFilter):
         self.sp = sp
 
     def filter(self, message: Message):
-        return not self.sp.is_spam(message, self.name)
+        return not self.sp.is_spam(message, self.group)
