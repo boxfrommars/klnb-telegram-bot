@@ -35,7 +35,9 @@ def start(update: Update, context: CallbackContext) -> None:
 
 
 spam_preventer = SpamPreventer({
-    'cruise': 5 * 60
+    'cruise': {
+        'delay': 60
+    }
 })
 two_men_talk = TwoMenTalkConversation()
 
