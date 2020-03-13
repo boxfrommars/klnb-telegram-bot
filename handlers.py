@@ -3,8 +3,10 @@ import logging
 import os
 import random
 import re
+from datetime import datetime
 from typing import Callable
 
+import requests
 from telegram import Update
 from telegram.ext import MessageHandler, Filters, CallbackContext
 
@@ -157,6 +159,10 @@ krd_handler = MessageHandler(
 
 def cruise_info(update: Update, context: CallbackContext):
     fname = os.environ.get('CRUISE_FILE')
+    news_feed_url = os.environ.get('NEWS_FEED')
+
+    logger.warning(news_feed_url)
+
     with open(fname) as json_file:
         data = json.load(json_file)
         message = '```\n'
@@ -168,11 +174,23 @@ def cruise_info(update: Update, context: CallbackContext):
                 f"deaths: {row.get('deaths'):<3}"
                 f"recovered: {row.get('recovered')}\n")
 
-        message += '```'
+        message += '```\n'
 
-        update.message.reply_markdown(text=message)
+    news = requests.get(news_feed_url).json().get('data', {}).get('news', [])
+
+    news_block = '*Последние новости*\n\n'
+    needles = ['эстони', 'швеци', 'финлянд', 'хельсинк', 'таллин', 'стокгольм']
+
+    for news_item in news:
+        if any(needle in news_item['title'].lower() for needle in needles):
+            dt = datetime.fromisoformat(news_item['publish_date']).strftime('%H:%M %d.%m')
+            news_block += f"{news_item['title']}\n{dt} | {news_item['link']}\n\n"
+
+    message += news_block
+
+    update.message.reply_markdown(text=message, disable_web_page_preview=True)
 
 
 cruise_handler = MessageHandler(
-    regex(r'круиз') & antispam('cruise'),
+    regex(r'круиз'),  # & antispam('cruise'),
     cruise_info)
