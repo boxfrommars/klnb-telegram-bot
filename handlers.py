@@ -192,5 +192,5 @@ def cruise_info(update: Update, context: CallbackContext):
 
 
 cruise_handler = MessageHandler(
-    regex(r'круиз'),  # & antispam('cruise'),
+    regex(r'круиз') & antispam('cruise'),
     cruise_info)
