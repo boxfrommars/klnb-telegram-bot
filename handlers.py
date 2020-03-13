@@ -34,7 +34,9 @@ def start(update: Update, context: CallbackContext) -> None:
         text="I'm a bot, please talk to me!")
 
 
-spam_preventer = SpamPreventer()
+spam_preventer = SpamPreventer({
+    'cruise': 5 * 60
+})
 two_men_talk = TwoMenTalkConversation()
 
 
