@@ -4,9 +4,12 @@ import os
 import random
 import re
 from datetime import datetime
+from operator import itemgetter
 from typing import Callable
 
+import feedparser
 import requests
+from dateutil import tz
 from telegram import Update
 from telegram.ext import MessageHandler, Filters, CallbackContext
 
@@ -35,9 +38,7 @@ def start(update: Update, context: CallbackContext) -> None:
 
 
 spam_preventer = SpamPreventer({
-    'cruise': {
-        'delay': 60
-    }
+    'cruise': {'delay': 60}
 })
 two_men_talk = TwoMenTalkConversation()
 
@@ -163,9 +164,6 @@ krd_handler = MessageHandler(
 
 def cruise_info(update: Update, context: CallbackContext):
     fname = os.environ.get('CRUISE_FILE')
-    news_feed_url = os.environ.get('NEWS_FEED')
-
-    logger.warning(news_feed_url)
 
     with open(fname) as json_file:
         data = json.load(json_file)
@@ -180,17 +178,70 @@ def cruise_info(update: Update, context: CallbackContext):
 
         message += '```\n'
 
-    news = requests.get(news_feed_url).json().get('data', {}).get('news', [])
-
-    news_block = '*Последние новости*\n\n'
     needles = ['эстони', 'швеци', 'финлянд', 'хельсинк', 'таллин', 'стокгольм']
+    current_tz = tz.gettz('Europe/Moscow')
+    dt_format = '%H:%M %d.%m'
+    countries_news = []
 
-    for news_item in news:
+    # RSS
+    feeds = [
+            {'url': 'https://rss.newsru.com/russia/', 'dt_format': '%a, %d %b %Y %H:%M:%S %z'},
+            {'url': 'https://rss.newsru.com/world/', 'dt_format': '%a, %d %b %Y %H:%M:%S %z'},
+            {'url': 'https://www.interfax.ru/rss.asp', 'dt_format': '%a, %d %b %Y %H:%M:%S %z'},
+            {'url': 'https://ria.ru/export/rss2/index.xml', 'dt_format': '%a, %d %b %Y %H:%M:%S %z'},
+            {'url': 'https://news.yandex.ru/society.rss', 'dt_format': '%d %b %Y %H:%M:%S %z'}
+    ]
+
+    for feed in feeds:
+        d = feedparser.parse(feed['url'])
+
+        logger.info('%s %s', len(d['entries']), feed['url'])
+
+        for item in d['entries']:
+            has_needle_in_title = any(needle in item['title'].lower() for needle in needles)
+            has_needle_in_summary = any(needle in item['summary'].lower() for needle in needles)
+
+            if has_needle_in_title or has_needle_in_summary:
+                dt = datetime.strptime(item['published'], feed['dt_format']).astimezone(tz=current_tz)
+                if ((datetime.now(tz=current_tz) - dt).total_seconds() / (60 * 60)) < 16:
+                    countries_news.append({
+                        'title': item['title'],
+                        'link': item['link'],
+                        'published_origin': item['published'],
+                        'published': dt.strftime(dt_format),
+                        'published_dt': dt
+                    })
+
+    # TASS JSON
+    news_feed_url = ('https://tass.ru/live/api/v1/get_feed'
+                     '?timestamp=1684054129&limit=100&slug=obschestvo'
+                     '&theme=%D0%A0%D0%B0%D1%81%D0%BF%D1%80%D0%BE%D1%81%D1%82%D1%80%D0%B0%D0%BD%D0%B5%D0%BD%D0'
+                     '%B8%D0%B5%20%D0%BA%D0%BE%D1%80%D0%BE%D0%BD%D0%B0%D0%B2%D0%B8%D1%80%D1%83%D1%81%D0%B0%20'
+                     '%D0%BD%D0%BE%D0%B2%D0%BE%D0%B3%D0%BE%20%D1%82%D0%B8%D0%BF%D0%B0')
+
+    tass_news = requests.get(news_feed_url).json().get('data', {}).get('news', [])
+
+    for news_item in tass_news:
         if any(needle in news_item['title'].lower() for needle in needles):
-            dt = datetime.fromisoformat(news_item['publish_date']).strftime('%H:%M %d.%m')
-            news_block += f"{news_item['title']}\n{dt} | {news_item['link']}\n\n"
+            dt = datetime.fromisoformat(news_item['publish_date']).astimezone(tz=current_tz)
+            if ((datetime.now(tz=current_tz) - dt).total_seconds() / (60 * 60)) < 16:
+                countries_news.append({
+                    'title': news_item['title'],
+                    'link': news_item['link'],
+                    'published_origin': news_item['publish_date'],
+                    'published': dt.strftime(dt_format),
+                    'published_dt': dt
+                })
 
-    message += news_block
+    countries_news = sorted(countries_news, key=itemgetter('published_dt'), reverse=True)
+
+    message += '*Последние новости*\n\n'
+    for news_item in countries_news:
+        newsline = f"{news_item['title']}\n{news_item['published']} | {news_item['link']}\n\n".replace('_', '\\_')
+        if (len(message) + len(newsline)) > 4096:
+            break
+        else:
+            message += newsline
 
     update.message.reply_markdown(text=message, disable_web_page_preview=True)
 
