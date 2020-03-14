@@ -172,9 +172,9 @@ def cruise_info(update: Update, context: CallbackContext):
         for country in data:
             row = data[country]
             message += (
-                f"{country:<8} infected: {row.get('infected'):<5}"
-                f"deaths: {row.get('deaths'):<3}"
-                f"recovered: {row.get('recovered')}\n")
+                f"{country:<8} infctd: {row.get('infected'):<5}"
+                f"dths: {row.get('deaths'):<3}"
+                f"recvrd: {row.get('recovered')}\n")
 
         message += '```\n'
 
