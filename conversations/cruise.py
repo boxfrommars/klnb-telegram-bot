@@ -84,6 +84,9 @@ def cruise_info(update: Update, context: CallbackContext):
         f'{base_url}/category_rasprostranenie-novogo-koronavirusa+location_Finland/',
         f'{base_url}/category_rasprostranenie-novogo-koronavirusa+location_Estonia/',
         f'{base_url}/category_rasprostranenie-novogo-koronavirusa+location_Sweden/',
+        f'{base_url}/category_-koronavirus-covid-19+location_Finland/',
+        f'{base_url}/category_-koronavirus-covid-19+location_Estonia/',
+        f'{base_url}/category_-koronavirus-covid-19+location_Sweden/'
     ]
 
     countries_news = []
@@ -110,12 +113,16 @@ def cruise_info(update: Update, context: CallbackContext):
     countries_news = sorted(countries_news, key=itemgetter('published_dt'), reverse=True)
 
     message += '*Последние новости*\n\n'
+    already_processed = []
     for news_item in countries_news:
-        if ((datetime.now(tz=current_tz) - news_item['published_dt']).total_seconds() / (60 * 60)) < 16:
+        is_fresh = ((datetime.now(tz=current_tz) - news_item['published_dt']).total_seconds() / (60 * 60)) < 16
+        is_uniq = news_item['link'] not in already_processed
+        if is_fresh and is_uniq:
             newsline = f"{news_item['title']}\n{news_item['published']} | {news_item['link']}\n\n".replace('_', '\\_')
             if (len(message) + len(newsline)) > 4096:
                 break
             else:
+                already_processed.append(news_item['link'])
                 message += newsline
 
     update.message.reply_markdown(text=message, disable_web_page_preview=True)
