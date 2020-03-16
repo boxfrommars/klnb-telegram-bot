@@ -15,6 +15,8 @@ from telegram.ext import CallbackContext
 def cruise_info(update: Update, context: CallbackContext):
     fname = os.environ.get('CRUISE_FILE')
 
+
+
     with open(fname) as json_file:
         data = json.load(json_file)
         message = '```\n'
@@ -27,6 +29,14 @@ def cruise_info(update: Update, context: CallbackContext):
                 f"recvrd: {row.get('recovered')}\n")
 
         message += '```\n'
+
+    # EXCHANGE RATES
+    exchange_rates_url = 'https://meduza.io/api/misc/stock/all'
+    exchange_rates = requests.get(exchange_rates_url).json()
+
+    usd = exchange_rates.get('usd').get('current')
+    eur = exchange_rates.get('eur').get('current')
+    message += f'`$ {usd} | € {eur}`\n\n'
 
     needles = ['эстони', 'швеци', 'финлянд', 'хельсинк', 'таллин', 'стокгольм']
     current_tz = tz.gettz('Europe/Moscow')
