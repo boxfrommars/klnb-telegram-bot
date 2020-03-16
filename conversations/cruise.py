@@ -102,13 +102,20 @@ def cruise_info(update: Update, context: CallbackContext):
             human_dt = news_item.find(class_='list-item__date').get_text()
             dt = parse_datetime(human_dt, current_tz)
 
-            countries_news.append({
-                'title': title,
-                'link': f'{base_url}{link}',
-                'published_origin': human_dt,
-                'published': dt.strftime(dt_format),
-                'published_dt': dt
-            })
+            tags = news_item.find_all(class_='list-tag__text')
+            tags = list(map(lambda t: t.get_text(), tags))
+
+            about_covid = any('коронавирус' in t.lower() for t in tags)
+            about_sport = any('спорт' in t.lower() for t in tags)
+
+            if about_covid and not about_sport:
+                countries_news.append({
+                    'title': title,
+                    'link': f'{base_url}{link}',
+                    'published_origin': human_dt,
+                    'published': dt.strftime(dt_format),
+                    'published_dt': dt
+                })
 
     countries_news = sorted(countries_news, key=itemgetter('published_dt'), reverse=True)
 
@@ -141,10 +148,13 @@ def parse_datetime(st, tzinfo):
             hour=hour, minute=minutes, second=0, microsecond=0
         )
     elif ',' in st:
-        datepart = re.findall(r'(.+),', st)[0].split()
+        datepart = re.findall('(.+),', st)[0].split()
         day = int(datepart[0])
         month = int(monthes_map.index(datepart[1])) + 1
-        year = 2020
+        if len(datepart) == 3:
+            year = int(datepart[2])
+        else:
+            year = datetime.now(tz=tzinfo).year
         dt = datetime(year=year, month=month, day=day, hour=hour, minute=minutes, tzinfo=tzinfo)
     else:
         dt = datetime.now(tz=tzinfo).replace(
