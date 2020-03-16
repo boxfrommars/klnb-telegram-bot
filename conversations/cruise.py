@@ -153,7 +153,7 @@ def cruise_info(update: Update, context: CallbackContext):
 
         countries_news.append({
             'title': description,
-            'link': f'{base_url}{link}',
+            'link': f'{link}',
             'published_origin': human_dt,
             'published': dt.strftime(dt_format),
             'published_dt': dt
