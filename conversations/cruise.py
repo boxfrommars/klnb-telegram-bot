@@ -15,8 +15,6 @@ from telegram.ext import CallbackContext
 def cruise_info(update: Update, context: CallbackContext):
     fname = os.environ.get('CRUISE_FILE')
 
-
-
     with open(fname) as json_file:
         data = json.load(json_file)
         message = '```\n'
@@ -99,7 +97,6 @@ def cruise_info(update: Update, context: CallbackContext):
         f'{base_url}/category_-koronavirus-covid-19+location_Sweden/'
     ]
 
-    countries_news = []
     for start_url in start_urls:
         req = requests.get(start_url)
         soup = BeautifulSoup(req.content, 'html.parser')
