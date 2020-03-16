@@ -1,7 +1,7 @@
 import json
 import os
 import re
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from operator import itemgetter
 
 import feedparser
@@ -116,6 +116,38 @@ def cruise_info(update: Update, context: CallbackContext):
                     'published': dt.strftime(dt_format),
                     'published_dt': dt
                 })
+
+    # MOBY NEWS
+    headers = {'Accept-Language': 'ru-RU,ru'}
+    req = requests.get('https://stpeterline.com/company-news', headers=headers)
+    soup = BeautifulSoup(req.content, 'html.parser')
+
+    body = soup.find("div", id="newsMain")
+    news_items = body.find_all(class_='one')
+
+    for news_item in news_items:
+        # title = news_item.find(class_='name').get_text()
+        description = news_item.find(class_='description').get_text()
+        link = news_item.find('a').get('href')
+
+        human_dt = news_item.find(class_='date').get_text()
+        human_dt_parts = list(map(int, human_dt.split('.')))
+
+        dt = date(year=human_dt_parts[2], month=human_dt_parts[1], day=human_dt_parts[0])
+        now = datetime.now(tz=current_tz)
+
+        if dt == now.date():
+            dt = now
+        else:
+            dt = datetime(dt.year, dt.month, dt.day, hour=23, minute=59, second=59, tzinfo=current_tz)
+
+        countries_news.append({
+            'title': description,
+            'link': f'{base_url}{link}',
+            'published_origin': human_dt,
+            'published': dt.strftime(dt_format),
+            'published_dt': dt
+        })
 
     countries_news = sorted(countries_news, key=itemgetter('published_dt'), reverse=True)
 
