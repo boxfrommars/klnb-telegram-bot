@@ -35,7 +35,8 @@ def start(update: Update, context: CallbackContext) -> None:
 
 
 spam_preventer = SpamPreventer({
-    'cruise': {'delay': 60}
+    'cruise': {'delay': 300},
+    'labi': {'delay': 60},
 })
 two_men_talk = TwoMenTalkConversation()
 
@@ -131,6 +132,10 @@ awesome_selyan_handler = MessageHandler(
     & (~Filters.forwarded) & TextCountFilter(30)
     & antispam('awesome_selyan'),
     choice(['Артём Сергеевич, вашими устами да мёд бы пить']))
+
+labi_handler = MessageHandler(
+    regex(r'\bлаби\b') & antispam('labi'),
+    choice(['Лаби']))
 
 kuban_handler = MessageHandler(
     regex(r'\bкубан') & antispam('kuban'),

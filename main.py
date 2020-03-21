@@ -26,6 +26,7 @@ dp.add_handler(handlers.kuban_handler)
 dp.add_handler(handlers.krd_handler)
 dp.add_handler(handlers.awesome_selyan_handler)
 dp.add_handler(handlers.cruise_handler)
+dp.add_handler(handlers.labi_handler)
 
 dp.add_handler(MessageHandler(Filters.text, handlers.collector))
 
