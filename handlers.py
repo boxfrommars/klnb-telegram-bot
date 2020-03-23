@@ -1,4 +1,3 @@
-
 import logging
 import os
 import random
@@ -10,7 +9,7 @@ from telegram import Update
 from telegram.ext import MessageHandler, Filters, CallbackContext
 
 from conversations.two_men_talk import TwoMenTalkConversation
-from conversations.cruise import cruise_info
+# from conversations.cruise import cruise_info
 from filters.antispam import AntispamFilter, SpamPreventer
 from filters.text_count import TextCountFilter
 
@@ -35,8 +34,8 @@ def start(update: Update, context: CallbackContext) -> None:
 
 
 spam_preventer = SpamPreventer({
-    'cruise': {'delay': 300},
-    'labi': {'delay': 60},
+    # 'cruise': {'delay': 300},
+    # 'labi': {'delay': 60},
 })
 two_men_talk = TwoMenTalkConversation()
 
@@ -165,4 +164,11 @@ krd_handler = MessageHandler(
 
 cruise_handler = MessageHandler(
     regex(r'круиз') & antispam('cruise'),
-    cruise_info)
+    choice([
+        'Да никому уже неинтересен этот круиз',
+        'Ото жили нормально без всяких круизов и ещё тысячу лет проживём'
+    ]))
+
+# cruise_handler = MessageHandler(
+#     regex(r'круиз') & antispam('cruise'),
+#     cruise_info)
