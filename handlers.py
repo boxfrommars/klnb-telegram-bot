@@ -169,6 +169,13 @@ cruise_handler = MessageHandler(
         'Ото жили нормально без всяких круизов и ещё тысячу лет проживём'
     ]))
 
+kashin_handler = MessageHandler(
+    regex(r'кашин') & antispam('kashin'),
+    choice([
+        'Привет пользователю рука в жопе!',
+        'Кстати, а как там густопсовые?'
+    ]))
+
 # cruise_handler = MessageHandler(
 #     regex(r'круиз') & antispam('cruise'),
 #     cruise_info)
